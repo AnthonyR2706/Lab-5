@@ -1,0 +1,230 @@
+package com.company;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.PrintStream;
+import java.util.Scanner;
+/**
+ *    Will create a binary search list playlist from the songs. And can tell all teh songs between two songs
+ *    @author Anthony Ramanovich
+ *    @version 1.0 , 11/8/20
+ */
+
+public class Lab5 {
+    public static void main(String[] args) throws FileNotFoundException {
+        String[][] spotify = new String[1000][5];
+        File week1 = new File("C:\\regional-global-weekly-latest.csv");
+        File week2 = new File("C:\\regional-global-weekly-2020-10-09--2020-10-16.csv");
+        File week3 = new File("C:\\regional-global-weekly-2020-10-02--2020-10-09.csv");
+        File week4 = new File("C:\\regional-global-weekly-2020-09-25--2020-10-02.csv");
+        File week5 = new File("C:\\regional-global-weekly-2020-09-18--2020-09-25.csv");
+        scan(week1, 0, spotify);
+        scan(week2, 200, spotify);
+        scan(week3, 400, spotify);
+        scan(week4, 600, spotify);
+        scan(week5, 800, spotify);
+        String[] songNames = new String[1000];
+        String[] artistNames = new String[1000];
+        int[] averagePlays = new int[1000];
+        int[] amountAppears = new int[1000];
+        int unique = -1;
+        for (int i = 0; i < 1000; i++) {
+            int check = contains(songNames, spotify[i][1]);
+            if (-1 == check) {
+                unique++;
+                songNames[unique] = spotify[i][1];
+                artistNames[unique] = spotify[i][2];
+                averagePlays[unique] = Integer.parseInt(spotify[i][3]);
+                amountAppears[unique] = 1;
+            } else {
+                averagePlays[check] += Integer.parseInt(spotify[i][3]);
+                amountAppears[check]++;
+            }
+        }
+        String[] uniqueArtists = new String[artistNames.length];
+        String[][] chart = new String[unique][4];
+        int[][] artistPlays = new int[artistNames.length][2];
+        int uniqueArt = -1;
+        for (int i = 0; i < unique; i++) {
+            chart[i][0] = songNames[i];
+            chart[i][1] = artistNames[i];
+            chart[i][2] = Integer.toString(averagePlays[i] / amountAppears[i]);
+            int test = contains(uniqueArtists, artistNames[i]);
+            if (-1 == test) {
+                uniqueArt++;
+                uniqueArtists[uniqueArt] = artistNames[i];
+                artistPlays[uniqueArt][0] += averagePlays[i];
+                artistPlays[uniqueArt][1]++;
+            } else {
+                artistPlays[test][0] += averagePlays[test];
+                artistPlays[test][1]++;
+            }
+        }
+        for (int i = 0; i < uniqueArt; i++) {
+            artistPlays[i][1] = (artistPlays[i][0] / artistPlays[i][1]);
+        }
+        for (int i = 0; i < chart.length; i++) {
+            for (int j = 0; i < uniqueArtists.length; j++) {
+                if(uniqueArtists[j] == null){
+                    break;
+                }
+                if (chart[i][1].compareTo(uniqueArtists[j]) == 0) {
+                    chart[i][3] = Integer.toString(artistPlays[j][1]);
+                }
+            }
+        }
+        for(int i = 0; i < chart.length; i++){
+            if (chart[i][0].charAt(0) == '"') {
+                chart[i][0] = chart[i][0].substring(1, chart[i][0].length() - 1);
+            }
+            if (chart[i][1].charAt(0) == '"') {
+                chart[i][1] = chart[i][1].substring(1, chart[i][1].length() - 1);
+            }
+        }
+        sort(chart);
+        BinaryTree playlist = new BinaryTree(chart[0][0], Integer.parseInt(chart[0][2]), chart[0][1], Integer.parseInt(chart[0][3]));
+        playlist.root = playlist.arrToTree(chart, 0, chart.length - 1);
+        FileOutputStream out = new FileOutputStream("D:\\ArtistsSorted.txt");
+        PrintStream f = new PrintStream(out);
+        playlist.subset(playlist.root, "+Linda", "Runnin", f);
+    }
+    /**
+     * Scans the 5 weeks of music into a single array
+     *
+     * @param file     the specific week getting scanned
+     * @param position where the array is up to
+     * @param spotify  the array getting filled
+     * @throws FileNotFoundException
+     */
+    public static void scan(File file, int position, String[][] spotify) throws FileNotFoundException {
+        Scanner in;
+        in = new Scanner(file);
+        in.nextLine();
+        in.nextLine();
+        for (int i = 0; i < 200; i++) {
+            String line = in.nextLine();
+            String[] values = line.split(",(?=([^\"]*\"[^\"]*\")*[^\"]*$)");
+            for (int j = 0; j < 5; j++) {
+                spotify[i + position][j] = values[j];
+            }
+        }
+    }
+    /**
+     * Checks if a certain song is already in the array
+     *
+     * @param array the array of songs
+     * @param name  the name that is being checked for
+     * @return where the song appears in the array or -1 if they do not appear
+     */
+    public static int contains(String[] array, String name) {
+        for (int i = 0; i < 1000; i++) {
+            if (array[i] == null) {
+                break;
+            }
+            if (0 == array[i].compareTo(name)) {
+                return i;
+            }
+        }
+        return -1;
+    }
+    /**
+     * Sorts the array
+     * @param chart the array of songs and artists
+     */
+    public static void sort(String[][] chart) {
+        String temp;
+        for (int i = 0; i < chart.length; i++) {
+            for (int j = i + 1; j < chart.length; j++) {
+                if (chart[i][0].compareToIgnoreCase(chart[j][0]) > 0) {
+                    temp = chart[i][0];
+                    chart[i][0] = chart[j][0];
+                    chart[j][0] = temp;
+                    temp = chart[i][1];
+                    chart[i][1] = chart[j][1];
+                    chart[j][1] = temp;
+                    temp = chart[i][2];
+                    chart[i][2] = chart[j][2];
+                    chart[j][2] = temp;
+                    temp = chart[i][3];
+                    chart[i][3] = chart[j][3];
+                    chart[j][3] = temp;
+                }
+            }
+        }
+    }
+}
+
+/**
+ *The Song object
+ */
+class Song{
+    String songTitle;
+    int streamsAverageCount;
+    String artistName;
+    int artistAverage;
+    Song left, right;
+    public Song(String a, int b, String c,int d){
+        this.songTitle = a;
+        this.streamsAverageCount = b;
+        this.artistName = c;
+        this.artistAverage = d;
+    }
+}
+
+/**
+ * Used to create the Binary Tree
+ */
+class BinaryTree{
+    Song root;
+
+    /**
+     * Constructor
+     * @param a SongTitle
+     * @param b Average streams per song
+     * @param c ArtistName
+     * @param d Average streams per artist
+     */
+    BinaryTree(String a, int b, String c, int d){
+        root = new Song(a, b, c, d);
+    }
+    /**
+     * Turns the sorted array into a binary search tree
+     * @param arr the sorted array
+     * @param start start of the array
+     * @param end end of the array
+     * @return
+     */
+    Song arrToTree(String arr[][], int start, int end) {
+        if (start > end) {
+            return null;
+        }
+        int mid = (start + end) / 2;
+        Song song = new Song(arr[mid][0], Integer.parseInt(arr[mid][2]), arr[mid][1], Integer.parseInt(arr[mid][3]));
+        song.left = arrToTree(arr, start, mid - 1);
+        song.right = arrToTree(arr, mid + 1, end);
+        return song;
+    }
+
+    /**
+     * finds all teh songs between two songs
+     * @param node root node
+     * @param start the starting song
+     * @param end the ending song
+     * @param f the PrintStream
+     */
+    void subset(Song node, String start, String end, PrintStream f) {
+        if (node == null) {
+            return;
+        }
+        if (start.compareTo(node.songTitle) < 0) {
+            subset(node.left, start, end, f);
+        }
+        if (start.compareTo(node.songTitle) <= 0 && end.compareTo(node.songTitle) >= 0) {
+            f.println(node.songTitle + " ");
+        }
+        if (end.compareTo(node.songTitle) > 0) {
+            subset(node.right, start, end, f);
+        }
+    }
+}
